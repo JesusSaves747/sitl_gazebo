@@ -512,19 +512,28 @@ void GazeboMavlinkInterface::OnUpdate(const common::UpdateInfo& /*_info*/) {
 
   // TODO: Remove GPS message from IMU plugin. Added gazebo GPS plugin. This is temp here.
   // reproject local position to gps coordinates
+
+  const double gps_xy_noise_density = 2.0; // (m) / sqrt(hz)
+  const double gps_z_noise_density = 10.0; // (m) / sqrt(hz)
+  const double gps_vxy_noise_density = 2e-1; // (m/s) / sqrt(hz)
+  const double gps_vz_noise_density = 4e-1; // (m/s) / sqrt(hz)
   
-  standard_normal_distribution_ = std::normal_distribution<float>(0, 1.0f);
+  standard_normal_distribution_ = std::normal_distribution<float>(
+      0, gps_xy_noise_density*sqrt(gps_update_interval_));
   double noise_gps_x = standard_normal_distribution_(random_generator_);
   double noise_gps_y = standard_normal_distribution_(random_generator_);
 
-  standard_normal_distribution_ = std::normal_distribution<float>(0, 1.0f);
+  standard_normal_distribution_ = std::normal_distribution<float>(
+      0, gps_z_noise_density/sqrt(gps_update_interval_));
   double noise_gps_z = standard_normal_distribution_(random_generator_);
 
-  standard_normal_distribution_ = std::normal_distribution<float>(0, 0.1f);
+  standard_normal_distribution_ = std::normal_distribution<float>(
+      0, gps_vxy_noise_density/sqrt(gps_update_interval_));
   double noise_gps_vx = standard_normal_distribution_(random_generator_);
   double noise_gps_vy = standard_normal_distribution_(random_generator_);
 
-  standard_normal_distribution_ = std::normal_distribution<float>(0, 0.5f);
+  standard_normal_distribution_ = std::normal_distribution<float>(
+      0, gps_vz_noise_density/sqrt(gps_update_interval_));
   double noise_gps_vz = standard_normal_distribution_(random_generator_);
 
   double x_rad = (pos_W_I.y + noise_gps_y)/ earth_radius; // north
