@@ -513,31 +513,24 @@ void GazeboMavlinkInterface::OnUpdate(const common::UpdateInfo& /*_info*/) {
   // TODO: Remove GPS message from IMU plugin. Added gazebo GPS plugin. This is temp here.
   // reproject local position to gps coordinates
 
-  const double gps_xy_noise_density = 2.0; // (m) / sqrt(hz)
-  const double gps_z_noise_density = 10.0; // (m) / sqrt(hz)
-  const double gps_vxy_noise_density = 2e-1; // (m/s) / sqrt(hz)
-  const double gps_vz_noise_density = 4e-1; // (m/s) / sqrt(hz)
-  
-  standard_normal_distribution_ = std::normal_distribution<float>(
-      0, gps_xy_noise_density*sqrt(gps_update_interval_));
-  double noise_gps_x = standard_normal_distribution_(random_generator_);
-  double noise_gps_y = standard_normal_distribution_(random_generator_);
 
-  standard_normal_distribution_ = std::normal_distribution<float>(
-      0, gps_z_noise_density/sqrt(gps_update_interval_));
-  double noise_gps_z = standard_normal_distribution_(random_generator_);
+  double noise_gps_x = gps_xy_noise_density*sqrt(dt)*randn_(rand_);
+  double noise_gps_y = gps_xy_noise_density*sqrt(dt)*randn_(rand_);
+  double noise_gps_z = gps_z_noise_density*sqrt(dt)*randn_(rand_);
+  double noise_gps_vx = gps_vxy_noise_density*sqrt(dt)*randn_(rand_);
+  double noise_gps_vy = gps_vxy_noise_density*sqrt(dt)*randn_(rand_);
+  double noise_gps_vz = gps_vz_noise_density*sqrt(dt)*randn_(rand_);
+  double random_walk_gps_x = gps_xy_random_walk*sqrt(dt)*randn_(rand_);
+  double random_walk_gps_y = gps_xy_random_walk*sqrt(dt)*randn_(rand_);
+  double random_walk_gps_z = gps_z_random_walk*sqrt(dt)*randn_(rand_);
 
-  standard_normal_distribution_ = std::normal_distribution<float>(
-      0, gps_vxy_noise_density/sqrt(gps_update_interval_));
-  double noise_gps_vx = standard_normal_distribution_(random_generator_);
-  double noise_gps_vy = standard_normal_distribution_(random_generator_);
+  // gps bias integration
+  gps_bias_x_ += random_walk_gps_x*dt - gps_bias_x_/gps_corellation_time;
+  gps_bias_y_ += random_walk_gps_y*dt - gps_bias_y_/gps_corellation_time;
+  gps_bias_z_ += random_walk_gps_z*dt - gps_bias_z_/gps_corellation_time;
 
-  standard_normal_distribution_ = std::normal_distribution<float>(
-      0, gps_vz_noise_density/sqrt(gps_update_interval_));
-  double noise_gps_vz = standard_normal_distribution_(random_generator_);
-
-  double x_rad = (pos_W_I.y + noise_gps_y)/ earth_radius; // north
-  double y_rad = (pos_W_I.x + noise_gps_x)/ earth_radius; // east
+  double x_rad = (pos_W_I.y + noise_gps_y + gps_bias_y_)/ earth_radius; // north
+  double y_rad = (pos_W_I.x + noise_gps_x + gps_bias_x_)/ earth_radius; // east
   double c = sqrt(x_rad * x_rad + y_rad * y_rad);
   double sin_c = sin(c);
   double cos_c = cos(c);
@@ -555,7 +548,7 @@ void GazeboMavlinkInterface::OnUpdate(const common::UpdateInfo& /*_info*/) {
   hil_gps_msg.fix_type = 3;
   hil_gps_msg.lat = lat_rad * 180 / M_PI * 1e7;
   hil_gps_msg.lon = lon_rad * 180 / M_PI * 1e7;
-  hil_gps_msg.alt = (pos_W_I.z + alt_zurich + noise_gps_z) * 1000;
+  hil_gps_msg.alt = (pos_W_I.z + alt_zurich + noise_gps_z + gps_bias_z_) * 1000;
   hil_gps_msg.eph = 100;
   hil_gps_msg.epv = 100;
   hil_gps_msg.vel = velocity_current_W_xy.GetLength() * 100;
@@ -696,11 +689,10 @@ void GazeboMavlinkInterface::ImuCallback(ImuPtr& imu_message) {
   math::Vector3 vel_n = q_ng.RotateVector(model_->GetWorldLinearVel());
   math::Vector3 omega_nb_b = q_br.RotateVector(model_->GetRelativeAngularVel());
 
-  standard_normal_distribution_ = std::normal_distribution<float>(0, 0.01f);
   math::Vector3 mag_noise_b(
-    standard_normal_distribution_(random_generator_),
-    standard_normal_distribution_(random_generator_),
-    standard_normal_distribution_(random_generator_));
+    0.01*randn_(rand_),
+    0.01*randn_(rand_),
+    0.01*randn_(rand_));
 
   math::Vector3 accel_b = q_br.RotateVector(math::Vector3(
     imu_message->linear_acceleration().x(),
