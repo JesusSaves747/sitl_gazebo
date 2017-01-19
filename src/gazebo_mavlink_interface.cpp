@@ -516,6 +516,17 @@ void GazeboMavlinkInterface::OnUpdate(const common::UpdateInfo& /*_info*/) {
   standard_normal_distribution_ = std::normal_distribution<float>(0, 1.0f);
   double noise_gps_x = standard_normal_distribution_(random_generator_);
   double noise_gps_y = standard_normal_distribution_(random_generator_);
+
+  standard_normal_distribution_ = std::normal_distribution<float>(0, 1.0f);
+  double noise_gps_z = standard_normal_distribution_(random_generator_);
+
+  standard_normal_distribution_ = std::normal_distribution<float>(0, 0.1f);
+  double noise_gps_vx = standard_normal_distribution_(random_generator_);
+  double noise_gps_vy = standard_normal_distribution_(random_generator_);
+
+  standard_normal_distribution_ = std::normal_distribution<float>(0, 0.5f);
+  double noise_gps_vz = standard_normal_distribution_(random_generator_);
+
   double x_rad = (pos_W_I.y + noise_gps_y)/ earth_radius; // north
   double y_rad = (pos_W_I.x + noise_gps_x)/ earth_radius; // east
   double c = sqrt(x_rad * x_rad + y_rad * y_rad);
@@ -535,13 +546,13 @@ void GazeboMavlinkInterface::OnUpdate(const common::UpdateInfo& /*_info*/) {
   hil_gps_msg.fix_type = 3;
   hil_gps_msg.lat = lat_rad * 180 / M_PI * 1e7;
   hil_gps_msg.lon = lon_rad * 180 / M_PI * 1e7;
-  hil_gps_msg.alt = (pos_W_I.z + alt_zurich) * 1000;
+  hil_gps_msg.alt = (pos_W_I.z + alt_zurich + noise_gps_z) * 1000;
   hil_gps_msg.eph = 100;
   hil_gps_msg.epv = 100;
   hil_gps_msg.vel = velocity_current_W_xy.GetLength() * 100;
-  hil_gps_msg.vn = velocity_current_W.y * 100;
-  hil_gps_msg.ve = velocity_current_W.x * 100;
-  hil_gps_msg.vd = -velocity_current_W.z * 100;
+  hil_gps_msg.vn = (velocity_current_W.y + noise_gps_vx) * 100;
+  hil_gps_msg.ve = (velocity_current_W.x + noise_gps_vy) * 100;
+  hil_gps_msg.vd = (-velocity_current_W.z + noise_gps_vz) * 100;
   hil_gps_msg.cog = atan2(hil_gps_msg.ve, hil_gps_msg.vn) * 180.0/3.1416 * 100.0;
   hil_gps_msg.satellites_visible = 10;
   gps_delay_buffer.push(hil_gps_msg);
