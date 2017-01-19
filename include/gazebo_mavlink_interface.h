@@ -29,6 +29,7 @@
 #include "gazebo/transport/transport.hh"
 #include "gazebo/msgs/msgs.hh"
 #include <stdio.h>
+#include <queue>
 
 #include "common.h"
 
@@ -211,4 +212,8 @@ class GazeboMavlinkInterface : public ModelPlugin {
   int mavlink_udp_port_;
 
   };
+
+  std::queue<mavlink_hil_gps_t> gps_delay_buffer;
 }
+
+/* vim: set et fenc=utf-8 ff=unix sts=0 sw=2 ts=2 : */
