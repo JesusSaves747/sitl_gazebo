@@ -33,6 +33,7 @@ namespace gazebo {
 static const double lat_zurich = 47.397742 * M_PI / 180;  // rad
 static const double lon_zurich = 8.545594 * M_PI / 180;  // rad
 static const double alt_zurich = 488.0; // meters
+static const double pressure_alt_offset = 20; // meters
 // Seattle downtown (15 deg declination): 47.592182, -122.316031
 // static const double lat_zurich = 47.592182 * M_PI / 180;  // rad
 // static const double lon_zurich = -122.316031 * M_PI / 180;  // rad
@@ -728,7 +729,7 @@ void GazeboMavlinkInterface::ImuCallback(ImuPtr& imu_message) {
   } while (p1 <= FLT_EPSILON);
 
   float n = sqrtf(-2.0 * logf(p1)) * cosf(2.0f * M_PI * p2);
-  float alt_n = -pos_n.z + n * sqrtf(0.006f);
+  float alt_n = -pos_n.z + n * sqrtf(0.006f) + alt_zurich + pressure_alt_offset;
 
   sensor_msg.pressure_alt = (std::isfinite(alt_n)) ? alt_n : -pos_n.z;
   sensor_msg.temperature = 0.0;
