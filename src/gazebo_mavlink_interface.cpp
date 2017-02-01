@@ -33,7 +33,7 @@ namespace gazebo {
 static const double lat_zurich = 47.397742 * M_PI / 180;  // rad
 static const double lon_zurich = 8.545594 * M_PI / 180;  // rad
 static const double alt_zurich = 488.0; // meters
-static const double pressure_alt_offset = 20; // meters
+static const double pressure_alt_offset = -2; // meters
 // Seattle downtown (15 deg declination): 47.592182, -122.316031
 // static const double lat_zurich = 47.592182 * M_PI / 180;  // rad
 // static const double lon_zurich = -122.316031 * M_PI / 180;  // rad
